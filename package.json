@@ -1,0 +1,14 @@
+{
+  "name": "DocumentCloud-Mailsync",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node server.js files"
+  },
+  "dependencies": {
+    "mailparser": "^0.4.6",
+    "restler": "^3.2.2",
+    "watch": "^0.13.0"
+  },
+  "devDependencies": {}
+}
