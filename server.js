@@ -131,8 +131,11 @@ server.get('/scan', function(req, res, next) {
 		listeners: {
 			file: function (root, fileStats, next) {
 				var filename = path.join(root, fileStats.name);
-				fs.createReadStream(filename).pipe(mailparser);
-				next();
+				var stream = fs.createReadStream(filename).pipe(mailparser);
+				stream.on("close", function() {
+					next();
+				});
+				// next();
 			}
 		}
 	}
