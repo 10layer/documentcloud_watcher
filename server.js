@@ -7,6 +7,7 @@ var path = require("path");
 var es = require("event-stream");
 var crypto = require('crypto');
 var restify = require('restify');
+var walk = require('walk');
 
 var File = require("./file_model");
 var config = require("./config");
@@ -80,8 +81,10 @@ watch.createMonitor(dir, function(monitor) {
 	console.log("Started watching directory", process.argv[2]);
 	monitor.on("created", function(f, stat) {
 		var filename = f;
-		console.log("New File Found:", filename);
-		fs.createReadStream(filename).pipe(mailparser);
+		if (fs.lstatSync(filename).isFile()) {
+			console.log("New File Found:", filename);
+			fs.createReadStream(filename).pipe(mailparser);
+		}
 	});
 });
 
@@ -90,15 +93,46 @@ server
 	.use(restify.fullResponse())
 	.use(restify.bodyParser());
 
-server.get('/file/:checksum', function (req, res, next) {
-	File.findOne({ checksum: req.params.checksum }, function (error, file) {
+server.get('/file', function(req, res, next) {
+	File.find(function(error, files) {
+		if (error) {
+			res.send(500, "500: Error", error);
+			return;
+		}
+		if (files) {
+			res.send(files);
+			next();
+		} else {
+			res.send(404, "404: Files not found");
+		}
+	})
+});
+
+server.get('/file/:searchq', function (req, res, next) {
+	File.findOne({ checksum: req.params.searchq }, function (error, file) {
 		if (file) {
 			res.send(file);	
 		} else {
-			res.send(404, "404: File not found");
+			File.findOne({ filename: req.params.searchq }, function(error, file) {
+				if (file) {
+					res.send(file);
+				} else {
+					res.send(404, "404: File not found");
+				}
+			});
 		}
     	
  	});
+});
+
+server.get('/scan', function(req, res, next) {
+	var walker = walk.walk(dir);
+	walker.on("file", function (root, fileStats, next) {
+		var filename = path.join(root, fileStats.name);
+		fs.createReadStream(filename).pipe(mailparser);
+		next();
+	});
+	res.send("Processing files...");
 });
 
 server.listen(config.port, function () {
