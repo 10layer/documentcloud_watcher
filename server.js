@@ -126,12 +126,22 @@ server.get('/file/:searchq', function (req, res, next) {
 });
 
 server.get('/scan', function(req, res, next) {
-	var walker = walk.walk(dir);
-	walker.on("file", function (root, fileStats, next) {
-		var filename = path.join(root, fileStats.name);
-		fs.createReadStream(filename).pipe(mailparser);
-		next();
-	});
+	//Synchronous walker, else things get out of hand...
+	var options = {
+		listeners: {
+			file: function (root, fileStats, next) {
+				var filename = path.join(root, fileStats.name);
+				fs.createReadStream(filename).pipe(mailparser);
+				next();
+			}
+		}
+	}
+	var walker = walk.walkSync(dir, options);
+	// walker.on("file", function (root, fileStats, next) {
+	// 	var filename = path.join(root, fileStats.name);
+	// 	fs.createReadStream(filename).pipe(mailparser);
+	// 	next();
+	// });
 	res.send("Processing files...");
 });
 
