@@ -75,7 +75,7 @@ var process_attachment = function(attachment) {
 	}
 };
 
-var dir = path.join(__dirname, process.argv[2]);
+var dir = path.normalize(process.argv[2]);
 
 watch.createMonitor(dir, function(monitor) {
 	console.log("Started watching directory", process.argv[2]);
