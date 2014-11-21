@@ -112,6 +112,7 @@ server.get('/file', function(req, res, next) {
 
 var queue = [];
 var check_queue = function() {
+	console.log("Checking queue, length", queue.length);
 	if (queue.length) {
 		func = queue.pop();
 		func();
