@@ -45,6 +45,7 @@ var process_attachment = function(attachment) {
 					// console.log(data);
 					if (data) {
 						console.log("File already uploaded");
+						check_queue();
 						return true;
 					} else {
 						console.log("Sending to DocumentCloud")
@@ -66,7 +67,8 @@ var process_attachment = function(attachment) {
 							});
 							file.save();
 							console.log("Saved to DocumentCloud");
-							console.log(file);
+							// console.log(file);
+							check_queue();
 						});
 					}
 				});
@@ -108,6 +110,14 @@ server.get('/file', function(req, res, next) {
 	})
 });
 
+var queue = [];
+var check_queue = function() {
+	if (queue.length) {
+		func = queue.pop();
+		func();
+	}
+}
+
 server.get('/file/:searchq', function (req, res, next) {
 	File.findOne({ checksum: req.params.searchq }, function (error, file) {
 		if (file) {
@@ -131,20 +141,12 @@ server.get('/scan', function(req, res, next) {
 		listeners: {
 			file: function (root, fileStats, next) {
 				var filename = path.join(root, fileStats.name);
-				var stream = fs.createReadStream(filename).pipe(mailparser);
-				stream.on("close", function() {
-					next();
-				});
-				// next();
+				queue.push(function() {fs.createReadStream(filename).pipe(mailparser) });
 			}
 		}
 	}
 	var walker = walk.walkSync(dir, options);
-	// walker.on("file", function (root, fileStats, next) {
-	// 	var filename = path.join(root, fileStats.name);
-	// 	fs.createReadStream(filename).pipe(mailparser);
-	// 	next();
-	// });
+	check_queue();
 	res.send("Processing files...");
 });
 
